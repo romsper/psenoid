@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Psenoid Fixture Page</title>
+</head>
+<body>
+  <h1 id="title">Psenoid Fixture</h1>
+
+  <button id="btn">Click me</button>
+  <span id="status">idle</span>
+  <div id="box" style="display:none">box</div>
+
+  <input id="name" type="text">
+
+  <input id="agree" type="checkbox">
+
+  <input id="file" type="file">
+
+  <select id="fruit">
+    <option value="a">Apple</option>
+    <option value="b">Banana</option>
+    <option value="c">Cherry</option>
+  </select>
+
+  <div id="tagged" class="alpha beta" data-role="hero">tagged</div>
+
+  <ul>
+    <li class="item">one</li>
+    <li class="item">two</li>
+    <li class="item">three</li>
+  </ul>
+
+  <div id="hidden" style="display:none">secret</div>
+
+  <iframe id="frame" srcdoc="&lt;p id='inframe'&gt;inside&lt;/p&gt;"></iframe>
+
+  <button id="alertBtn">alert</button>
+  <button id="confirmBtn">confirm</button>
+  <button id="promptBtn">prompt</button>
+  <span id="dialogResult">none</span>
+
+  <button id="spawn">spawn</button>
+  <div id="spawnTarget"></div>
+
+  <script>
+    document.getElementById('btn').addEventListener('click', function () {
+      document.getElementById('status').textContent = 'clicked';
+      document.getElementById('box').style.display = 'block';
+    });
+    document.getElementById('alertBtn').addEventListener('click', function () {
+      window.alert('hi-alert');
+    });
+    document.getElementById('confirmBtn').addEventListener('click', function () {
+      document.getElementById('dialogResult').textContent =
+        window.confirm('ok?') ? 'confirmed' : 'cancelled';
+    });
+    document.getElementById('promptBtn').addEventListener('click', function () {
+      document.getElementById('dialogResult').textContent = window.prompt('name?');
+    });
+    document.getElementById('spawn').addEventListener('click', function () {
+      setTimeout(function () {
+        document.getElementById('spawnTarget').innerHTML =
+          '<span class="spawned">a</span><span class="spawned">b</span>';
+      }, 300);
+    });
+  </script>
+</body>
+</html>

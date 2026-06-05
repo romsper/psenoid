@@ -9,9 +9,12 @@ interface ScribeListener {
 }
 
 object Scribe {
-    private val listeners = mutableListOf<ScribeListener>()
+    // Thread-safe: tests may register listeners and emit steps from parallel threads.
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<ScribeListener>()
 
     fun addListener(listener: ScribeListener) { listeners.add(listener) }
+    fun removeListener(listener: ScribeListener) { listeners.remove(listener) }
+    fun clearListeners() { listeners.clear() }
 
     fun <T> step(name: String, action: () -> T): T {
         listeners.forEach { it.beforeStep(name) }

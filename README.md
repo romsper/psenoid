@@ -6,7 +6,9 @@ A framework-agnostic Kotlin wrapper for browser automation that provides a unifi
 
 - Single API for both Playwright and Selenide — switch engines via config, no code changes
 - Smart waits with polling on every element action (click, type, getText, visibility checks)
+- Element collections with size/text wait-conditions
 - Network mocking and traffic capture (requests & responses)
+- Step logging with automatic screenshot-on-failure via pluggable listeners
 - Thread-safe engine management via `ThreadLocal` for parallel test execution
 - Remote browser support (Selenium Grid / Moon / Playwright WebSocket endpoint)
 
@@ -53,13 +55,81 @@ element("button.submit").click()
 element(By.id("username")).type("admin")
 element("h1").getText()
 
+// Interactions: click, doubleClick, rightClick, hover, type, clear, check/uncheck,
+// selectByValue/Text/Index, dragTo, uploadFile, pressKey, scrollTo, focus …
+element("#agree").check()
+element("#country").selectByText("Norway")
+element(".card").hover()
+
 // Custom timeout for a single action
 element(".slow-element").withTimeout(Duration.ofSeconds(10)).wait(visible)
 
-// Conditions
+// Conditions (smart-waited)
 element(".toast").wait(visible)
 element(".title").wait(text("Welcome"))
+element("#submit").wait(enabled)
+element(".badge").wait(hasClass("active"))
 ```
+
+Available conditions: `visible`, `invisible`, `enabled`, `disabled`, `checked`,
+`unchecked`, `exists`, `text`, `textExact`, `value`, `attribute`, `cssValue`, `hasClass`.
+
+## Element Collections
+
+`elements(...)` returns a lazy, live collection — the equivalent of Selenide's `$$`.
+Every item is a full element (with smart waits), so you can act on it directly.
+
+```kotlin
+val rows = elements(".row")            // or elements(By.cssSelector(".row"))
+
+rows.size()                            // current match count
+rows.isEmpty(); rows.isNotEmpty()
+rows[2].click()                        // indexed item — fully interactive
+rows.first().getText()
+rows.last().wait(visible)
+rows.texts()                           // ["Alice", "Bob", …] in document order
+rows.forEach { it.scrollTo() }         // Iterable: forEach / map / filter
+
+// Smart-waited collection conditions (polled until they hold or timeout)
+elements(".item").wait(size(3))
+elements(".item").wait(exactTexts("one", "two", "three"))
+elements(".item").wait(texts("on", "tw"))        // partial match, in order
+elements(".result").wait(sizeGreaterThan(0))
+elements(".toast").wait(empty)
+
+// Shortcuts
+elements(".item").shouldHaveSize(3)
+elements(".toast").shouldBeEmpty()
+```
+
+Available collection conditions: `size`, `sizeGreaterThan`, `sizeGreaterThanOrEqual`,
+`sizeLessThan`, `sizeLessThanOrEqual`, `empty`, `texts`, `exactTexts`.
+
+## Browser Control
+
+```kotlin
+// Navigation
+back(); forward(); refresh(); getUrl(); getTitle()
+
+// Frames
+switchToFrame("#editor"); switchToDefaultContent()
+
+// Tabs / windows
+openNewTab(); switchToTab(1); closeCurrentTab(); getTabCount()
+
+// Cookies & storage
+addCookie("token", "abc"); getCookie("token"); clearCookies()
+setLocalStorage("k", "v"); getLocalStorage("k"); clearLocalStorage()
+setSessionStorage("k", "v"); clearSessionStorage()
+
+// Misc
+scrollBy(0, 500); dragAndDrop(".source", ".target"); screenshot()
+executeScript("return document.title")   // raw JS (engine-native syntax)
+```
+
+> Dialogs — `acceptAlert()`, `dismissAlert()`, `setAlertText()`, `getAlertText()` — work on
+> both engines, but the call ordering differs: with Playwright set the policy *before* the
+> action that opens the dialog; with Selenide act on the *already-open* alert.
 
 ## Network Interception
 
@@ -85,6 +155,30 @@ println(resp.status)
 
 // Remove all mocks
 clearMocks()
+```
+
+## Logging & Reporting
+
+Every element action and wait runs through `Scribe`, which notifies registered listeners
+and captures a screenshot when a step fails. Enable the built-in console listener, or plug
+in your own (e.g. to forward steps and screenshots to Allure).
+
+```kotlin
+import logging.ScribeListener
+
+// Built-in: logs each step; saves failure screenshots to build/psenoid/screenshots
+enableConsoleLogging()
+
+// Or register a custom listener
+addListener(object : ScribeListener {
+    override fun beforeStep(name: String) {}
+    override fun afterStep(name: String) {}
+    override fun onFail(name: String, error: Throwable, screenshot: ByteArray?) {
+        // attach `screenshot` to your report
+    }
+})
+
+clearListeners()
 ```
 
 ## JUnit Example
